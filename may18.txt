@@ -1,0 +1,22 @@
+-----sql%found and sql%not found------------
+create or replace procedure sp_found(p_a number) as
+BEGIN
+  DELETE FROM emp WHERE empno= p_a;
+    IF SQL%FOUND THEN  -- delete succeeded
+        dbms_output.put_line( sql%rowcount ||' found that record ');
+    elsif sql%notfound then
+        dbms_output.put_line('not found that  record ');
+  END IF;
+END;
+set serveroutput on
+exec sp_found(7944);
+
+select * from emp;
+----------sql%rowcount----------------------------
+create or replace procedure sp_row_count as
+
+begin
+update emp set sal=sal+100;
+dbms_output.put_line(sql%rowcount);
+end;
+exec sp_row_count;
