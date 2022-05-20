@@ -1,0 +1,201 @@
+select sysdate from dual;
+
+create table treat_types (
+treat_type_id number(5) primary key,
+treat_type_desc varchar2(20),
+treat_type_code varchar2(10));
+
+insert into treat_types values(301,'Surgery','su401');
+insert into treat_types values(302,'Chemotherapy','ch402');
+insert into treat_types values(303,'RadiationTherapies','ra403');
+insert into treat_types values(304,'Chemotherapy','ch404');
+insert into treat_types values(305,'Surgery','su405');
+insert into treat_types values(306,'Hormonal Therapy','ho406');
+insert into treat_types values(307,'Hormonal Therapy','ho407');
+insert into treat_types values(308,'RadiationTherapies','ra408');
+insert into treat_types values(309,'TargetedTherapies','ta409');
+insert into treat_types values(310,'TargetedTherapies','ta410');
+
+select * from treat_types; 
+
+create table doctor_treat
+( doctor_id number(5) primary key,
+doctor_name varchar2(20),
+doctor_speciality varchar2(20));
+
+insert into doctor_treat values(201,'BVJHB','Ortho');
+insert into doctor_treat values(202,'JBVGF','Cardiologists');
+insert into doctor_treat values(208,'BVJHB','Anesthesiologists');
+insert into doctor_treat values(203,'BGTGG','Dermatologists');
+insert into doctor_treat values(204,'BVJMB','Endocrinologists');
+insert into doctor_treat values(209,'BVJMB','Gastroenterologists');
+insert into doctor_treat values(205,'JGFVHJB','Hematologists');
+insert into doctor_treat values(206,'BVFNBB','Neurologists');
+insert into doctor_treat values(207,'BCJDHBB','Oncologists');
+
+select * from doctor_treat;
+
+create table treatmentss
+( treat_id number(5) primary key,
+treat_type_id number(5) references treat_types(treat_type_id),
+treat_code varchar2 (5),
+treat_name varchar2(20),
+treat_start_on date);
+
+insert into treatmentss values(501,301,'ra601','Radiationtherapy','12-07-2017');
+insert into treatmentss values(502,303,'ra602','Radiationtherapy','12-08-2020');
+insert into treatmentss values(503,302,'im603','Immunotherapy','12-07-2021');
+insert into treatmentss values(504,301,'va604','Vaccinetherapy','12-07-2019');
+insert into treatmentss values(505,304,'im604','Immunotherapy','12-07-2018');
+insert into treatmentss values(506,305,'bl605','Bloodtransfusion','12-07-2020');
+insert into treatmentss values(507,309,'va606','Vaccinetherapy','12-07-2019');
+insert into treatmentss values(508,307,'bl607','Bloodtransfusion','12-07-2016');
+
+select * from treatments;
+
+create table patients_treated (
+pat_id number(5) primary key,
+pat_name varchar2(20),
+pat_dob date,
+pat_gender varchar2(10),
+loc_id number (5) references locations(loc_id),
+pat_phone number(15),
+insur_flag varchar2(2));
+
+insert into patients_treated values(1001,'BHFJ','12-03-1994','M',101,786574563,'Y');
+insert into patients_treated values(1002,'CVH','14-05-1974','F',102,786554563,'N');
+insert into patients_treated values(1003,'CVGH','13-03-1984','F',103,783474563,'N');
+insert into patients_treated values(1004,'FCHB','16-06-1974','M',104,785574563,'N');
+insert into patients_treated values(1005,'FGFG','17-07-1984','F',105,784574563,'Y');
+insert into patients_treated values(1006,'GFRH','18-08-1994','M',101,786574563,'Y');
+insert into patients_treated values(1007,'GFJFBV','19-09-1984','F',101,786574563,'N');
+insert into patients_treated values(1008,'HBVNCB','20-05-1994','M',102,786573463,'Y');
+insert into patients_treated values(1009,'HCJK','21-03-1997','F',103,786574343,'Y');
+insert into patients_treated values(1010,'BFVJH','22-10-1998','F',104,786572363,'Y');
+insert into patients_treated values(1011,'BCKV','23-11-1999','T',105,786557663,'N');
+insert into patients_treated values(1012,'VHCCBN','24-12-2000','T',105,786578963,'N');
+insert into patients_treated values(1013,'BVJBC','25-01-2001','M',104,786573453,'Y');
+
+select * from patients_treated;
+create table locations (
+loc_id number(5)primary key,
+loc_name varchar2(20),
+loc_type varchar2(20),
+state varchar2(10),
+country varchar2(10));
+
+insert into locations values(101,'Bangalore','Metro_city','Karnataka','India');
+insert into locations values(102,'Mumbai','Metro_city','Maharastra','India');
+insert into locations values(103,'Khadi road','Metro_city','Delhi','India');
+insert into locations values(104,'Mallippu','Non_Metro_city','Gujarath','India');
+insert into locations values(105,'Nelmangala','Metro_city','Karnataka','India');
+
+create table pat_treatment (
+pat_treat_id number(5) primary key,
+treat_id number(5) references treatment(treat_id),
+treat_date date,
+pat_id number(5)references patient_treat(pat_id),
+doctor_id number(5) references doctor_treat(doctor_id),
+treat_dur_days number(5));
+
+
+-- 1.Find out different treatments we provide from last three years.--
+
+select distinct(treat_name)
+from treatmentss
+where to_char(treat_start_on,'yyyy') between to_char(sysdate,'yyyy')-3 and to_char(sysdate,'yyyy');
+
+
+--2.Find the number patients we get from each each country--
+
+select count(pat_id),country
+from patients_treated p,locations l
+where p.loc_id=l.loc_id
+group by country;
+
+--3.Find all the patients who are currently taking the treatment of type Ayurvedic.--
+
+select pat_name 
+from patients_treated p,pat_treatmentss p1,treatment t
+where p1.pat_id=p.pat_id
+and t.treat_id=p1.treat_id
+and treat_date=sysdate
+and treat_name like 'ayurvedic';
+
+
+--4.Find all the patients who are coming from metro cities (loc_type = 'Metro')--
+
+select pat_name 
+from patients_treated p,locations l
+where p.loc_id=l.loc_id
+and loc_type = 'metro';
+
+--5.Find the number of customers who are having insurance--
+
+select count(pat_id),pat_name
+from patients_treated
+where insur_flag like 'y'
+group by pat_name;
+
+--6.Find all the days where we provided more than 100 treatments in Ayurvedic type--
+
+select count(treat_id), to_char(treat_start_on,'dd-mm-yyyy')
+from treatmentss
+where treat_name like 'ayurvedic'
+group by treat_name,to_char(treat_start_on,'dd-mm-yyyy')
+having count(treat_id)>100;
+
+
+--7.Find the doctor who have the most number of treatments on 03-JAN-2013--
+
+select add_months(trunc(sysdate,'yyyy'),-108)+2
+from dual;
+
+select doctor_name,count(treat_id)
+from doctor_treat d,pat_treatment p1
+where d.doctor_id=p1.doctor_id
+group by doctor_name
+having count(treat_id)>(select count(treat_id)
+                        from pat_treatment
+                        where to_char(treat_date,'dd-mon-yyyy')='03-jan-2013'
+                        group by to_char(treat_date));
+
+--8.Find the doctor who did not have any treatments on 03-JAN-2013.--
+
+select doctor_name
+from doctor_treat
+where doctor_id not in (select doctor_id
+                     from pat_treatment
+                     where to_char(treat_date,'dd-mon-yyyy')='03-jan-2013'
+
+
+--9.Find the treatments which were commonly given by both Doctor ‘RAM’ and ‘TIM’ gave on 03-JAN-2013--
+
+select doctor_name,treat_name
+from doctor_treat d,pat_treatment p1,treatment t
+where d.doctor_id=p1.doctor_id
+and t.treat_id=p1.treat_id
+and doctor_name like 'ram'
+and to_char(treat_date,'dd-mm-yyyy')='03-jan-2013'
+intersect
+select doctor_name,treat_name
+from doctor_treat d,pat_treatment p1,treatment t
+where d.doctor_id=p1.doctor_id
+and t.treat_id=p1.treat_id
+and doctor_name like 'tim'
+and to_char(treat_date,'dd-mm-yyyy')='03-jan-2013'
+
+--10.Create a view which gives us the Patient Name, Country Name and the treatment they took in the current month. Call the view as vw_current_month_patients--
+
+create view vw_current_month_patients as
+select pat_name,country,treat_id
+from patients_treated p,locations l,pat_treatment p1
+where p.loc_id=l.loc_id
+and p1.pat_id=p.pat_id
+and to_char(treat_date,'mm')=to_char(sysdate,'mm');
+
+desc vw_current_month_patients;
+
+select * from emp;
+
+select * from vw_current_month_patients;
