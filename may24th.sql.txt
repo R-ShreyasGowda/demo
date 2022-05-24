@@ -1,0 +1,93 @@
+
+
+--1.Write a query to display all the customer names who do not have a phone--
+
+SELECT CUST_NAME    
+    FROM CUSTOMER
+    WHERE PHONE IS NULL;
+ 
+--2.Write a query to display all the customers and the number of accounts they hold.--
+
+SELECT CUST_NAME,COUNT(A_NO)
+    FROM CUSTOMER C,ACCOUNTS A
+    WHERE C.CUST_ID=A.CUST_ID AND ACT_STATUS='terminated'
+    GROUP BY CUST_NAME;
+    
+--3.Display the customer who have the highest balance across all account types.--
+
+SELECT MAX(BALANCE),ACT_TYPE
+    FROM CUSTOMER C,ACCOUNTS A
+    WHERE C.CUST_ID=A.CUST_ID
+    GROUP BY ACT_TYPE;
+ 
+--4.Display the customer name who have the highest balance in individual account types.--
+
+SELECT CUST_NAME,MAX(BALANCE)
+    FROM CUSTOMER C,ACCOUNTS A
+    WHERE C.CUST_ID=A.CUST_ID
+   AND ACT_TYPE='current' 
+   GROUP BY CUST_NAME;
+   
+--5.Display the State wise no of accounts opened in the previous year.--
+
+SELECT STATE,COUNT(ACT_NO)
+    FROM CUSTOMER C,ACCOUNTS A
+    WHERE C.CUST_ID=A.CUST_ID AND TO_CHAR(ACT_OPEN_DATE,'YYYY')=(TO_CHAR(SYSDATE,'YYYY')-1)
+    GROUP BY STATE;
+    
+ --6.Display the customers who hold more than 2 accounts of the same type.--
+ 
+SELECT CUST_NAME
+    FROM CUSTOMER C,ACCOUNTS A
+    WHERE C.CUST_ID=A.CUST_ID 
+    AND ACT_TYPE='terminated'
+    GROUP BY CUST_NAME
+    having count(a_no)>2;
+
+--7.Display customer name and transaction type wise transaction amounts. (Consider two types of transactions which are Debit and Credit).--
+
+SELECT CUST_NAME,TXN_TYPE,SUM(LOCAL_AMT)
+    FROM CUSTOMER C,ACCOUNTS A,TRANSACTION T
+    WHERE C.CUST_ID=A.CUST_ID AND A.ACT_NO=T.ACT_NO
+    GROUP BY TXN_TYPE,CUST_NAME;
+    
+--8.Display city wise no of male and female customers.--
+
+SELECT CITY,GENDER,COUNT(GENDER)
+    FROM CUSTOMER
+    GROUP BY CITY,GENDER;
+
+--9.Display the customers who has only savings accout.--
+
+SELECT CUST_NAME
+    FROM CUSTOMER C,ACCOUNTS A
+    WHERE C.CUST_ID=A.CUST_ID AND ACT_TYPE='saving';
+
+  
+--10.	Display the cities that have more number of customers than the city HYD--
+ 
+SELECT CITY
+    FROM CUS
+    GROUP BY CITY
+    HAVING COUNT(CUST_ID)>(SELECT COUNT(CUST_ID)
+                        FROM CUS
+                        WHERE CITY='HYD');
+
+--11.	Display customers who have more number of accounts than customer ‘MIKE’.--
+
+SELECT CUST_NAME
+    FROM CUSTOMER C,ACCOUNTS A
+    WHERE C.CUST_ID=A.CUST_ID
+    GROUP BY CUST_NAME
+    HAVING COUNT(ACT_NO)>(SELECT COUNT(ACT_NO)
+                        FROM CUSTOMER C,ACCOUNTS A
+                        WHERE C.CUST_ID=A.CUST_ID AND CUST_NAME='MIKE');
+                        
+
+--12.dispaly statewise no of accounts and noof trancatios in this year.--
+    
+select count(a_no) ,city
+from customer c,accounts a ,transaction t
+where c.cust_id=a.cust_id and
+a.act_no=t.act_no and  to_char(act_open_date,'yyyy')=to_char(sysdate,'yyyy')
+group by city;
