@@ -1,0 +1,77 @@
+----------------DOCTOR,PATIENT,APPOINTMENT MODEL------------------
+
+-- 1.display the doctor who does not have any appointments today--
+
+select fname||' '||lname
+from doctor
+where doc_id not in (select doc_id
+                     from case
+                     where admission_date=sysdate);
+                     
+-- 2.display daywise no.of appointments in the current month--
+
+select count(case_id),to_char(admission_Date,'dy')
+from case
+where to_char(admission_Date,'mm-yyyy')=to_char(sysdate,'mm-yyyy')
+group by to_char(admission_Date,'dy');
+
+-- 3.display top 2 doctors based on number of appointments from last three years--
+
+select *
+from (select fname||' '||lname,count(case_id),dense_rank()over(order by count(case_id) desc)rnk
+      from doctor d,case c
+      where d.doc_id=c.doc_id
+      and to_char(admission_date,'yyyy')>to_char(sysdate,'yyyy')-3
+      group by fname||' '||lname)a
+where rnk=3;
+
+
+-- 4.display the no of patients who have taken appointment more than 3 times in current year--
+
+select count(p.pat_id),fname||' '||lname
+from patient p,case c
+where p.pat_id=c.pat_id 
+and to_char(admission_date,'yy')=to_char(sysdate,'yy')
+group by fname||' '||lname
+having count(case_id)>3;
+
+select * from patient;
+
+-- 5.display the youngest patient based on age--
+
+select min(trunc((sysdate-dob)/365))
+from patient;
+
+-- 6.display all the patients who treated by the doctor whom the patient 'arjun' was treated--
+
+                             
+select p.fname
+from doctor d,case c,patient p
+where d.doc_id=c.doc_id
+and p.pat_id=c.pat_id
+and d.fname = (select d.fname
+               from case c,patient p,doctor d
+               where d.doc_id=c.doc_id
+               and p.pat_id=c.pat_id
+               and p.fname='ARJUN');
+                               
+-- 7.extract gmail from emailid column--
+
+select substr(email_id,instr(email_id,'@')+1,instr(email_id,'.')-instr(email_id,'@')-1) from doctor;
+
+select * from doctor;
+
+-- 8.display the common doctors whom 'arjun' and 'harish' was treated--
+
+select d.fname
+from doctor d,patient p,case c
+where d.doc_id=c.doc_id
+and p.pat_id=c.pat_id
+and p.fname='arjun'
+intersect
+select d.fname
+from doctor d,patient p,case c
+where d.doc_id=c.doc_id
+and p.pat_id=c.pat_id
+and p.fname='harish';
+
