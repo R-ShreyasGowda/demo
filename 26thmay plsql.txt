@@ -1,0 +1,122 @@
+Create table bank_src
+(Bank_id varchar2(10),
+Account_id varchar2(20)); 
+
+Create table bank_target
+(bank_id varchar2(10),
+Account_type char(1),
+Account_id varchar2(20)
+);
+
+Create table bank_error
+(seq_no number(10),
+Account_id varchar2(20),
+Reason varchar2(20)
+);
+
+
+ insert into bank_src values('A1020','S30495345');
+ insert into bank_src values('A1020','S234234432');
+ insert into bank_src values('A1020','C34534543');
+ insert into bank_src values('A1020','C34595044'); 
+ insert into bank_src values('A1020','C2304985345');
+ insert into bank_src values('A1020','D934530945');
+ insert into bank_src values('A1020','D940404984');
+ insert into bank_src values('A1020','D02340494R');
+ insert into bank_src values('A1021','S3405935845');
+ insert into bank_src values('A1021','S950504840');
+ insert into bank_src values('A1021','S94040958');
+ insert into bank_src values('A1021','C34095345');
+ insert into bank_src values('A1021','C08548494');
+ insert into bank_src values('A1021','C88594048');
+ insert into bank_src values('A1021','D9440021');
+ insert into bank_src values('A1021','D4954896');
+create or replace procedure sp_bank as
+
+cursor cur_bank is
+select bank_id,account_id
+from bank_src;
+v_count number(5);
+begin
+for i in cur_bank loop
+select count(*) into v_count
+from bank_src
+where account_id=i.account_id and bank_id=i.bank_id;
+if v_count=0 then
+   if length(i.account_id)>7 and length(i.account_id)<11 then
+      if substr(i.account_id,1,1) in ('C','S','D') then
+           if regexp_like(substr(i.account_id,2),'^[0-9]+$') then
+                insert into bank_target values(i.bank_id,substr(i.account_id,1,1),substr(i.account_id,2));
+           else
+                insert into bank_error values(bank.nextval,i.account_id,'it is a character');
+                end if;
+      else
+          insert into bank_error values(bank.nextval,i.account_id,'not in c,s,d');
+          end if;
+   else
+       insert into bank_error values(bank.nextval,i.account_id,'length not in range');
+       end if;
+end if;       
+end loop;
+end;
+
+exec sp_bank;
+
+select * from bank_target;
+
+select * from bank_error;
+
+
+
+create sequence bank
+start with 101
+increment by 1
+minvalue 100
+maxvalue 200
+cycle;
+
+select * from bank_src;
+
+
+
+Create table source_data
+(st_id number(5),
+St_name varchar2(20),
+Marks number(5));
+
+Create table target_data
+(st_id number(5),
+St_name varchar2(20),
+Marks number(5),
+Top_marks number(5),
+Least_marks number(5),
+Varience_from_lowest number(5),
+Varience_from_highest number(5));
+
+insert into source_data values(100,'ram',45);
+insert into source_data values(101,'tim',85);
+insert into source_data values(102,'bala',95);
+
+create or replace procedure stud_marks as
+    v_max number(10);
+    v_min number(10);
+cursor stud_mark is
+    select st_id,st_name,marks from source_data;
+    v_count number(10);
+begin
+    select max(marks) into v_max
+    from source_data;
+    select min(marks) into v_min
+    from source_data;
+        for i in stud_mark loop
+           select count(*) into v_count
+           from target_data
+           where st_id=i.st_id and st_name=i.st_name and marks=i.marks;
+            if v_count=0 then
+                insert into target_data values(i.st_id,i.st_name,i.marks,v_max,v_min,i.marks-v_min,i.marks-v_max);
+            end if;
+        end loop;
+end;
+
+
+exec stud_marks;
