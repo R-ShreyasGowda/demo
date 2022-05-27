@@ -1,0 +1,111 @@
+
+create table agency_src	
+(agency varchar(20),	
+program_name varchar(20),	
+fiscal_year int,	
+original_appr_amount numeric);	
+	
+create table agency_tgt	
+(agency varchar(20),	
+program_name varchar(20),	
+fiscal_year int,	
+Original_appr_amount numeric,	
+program_amount numeric,	
+agency_amount numeric,	
+total_amount numeric);	
+
+insert into agency_src values('Education','High School Grant',2005,350000);
+insert into agency_src values('Education','middle School Grant',2005,5000);
+insert into agency_src values('Education','High School Grant',2004,250000);
+insert into agency_src values('dep','air',2005,5000);
+insert into agency_src values('dep','air',2004,6000);
+insert into agency_src values('dep','water',2005,7000);
+
+create or replace procedure sp_agency as
+
+cursor cur_agency_src is
+select * from agency_src;
+
+begin 
+     for i in cur_agency_src loop
+       insert into agency_tgt values(i.agency,i.program_name,i.fiscal_year,i.original_appr_amount,
+       (select sum(Original_appr_amount) from agency_src where program_name=i.program_name),
+       (select sum(Original_appr_amount) from agency_src where agency=i.agency),
+       (select sum(Original_appr_amount) from agency_src));
+    end loop;
+end;
+
+exec sp_agency;
+
+create or replace procedure sp_spec as
+
+      cursor cur_spec is
+      select specification_mix,actual_value
+      from input_spec;
+begin
+    for i in cur_spec loop
+      insert into output_spec values(i.specification_mix,i.actual_value
+       
+
+
+select * from agency_tgt;
+
+set serveroutput on   
+
+drop table input_spec;
+	
+create table input_spec
+(specification_mix varchar(50),	
+actual_val int)	
+	
+	
+create table output_spec
+(specification_mix varchar(50),	
+Actual_val int,	
+Ash_val int,	
+moisture_val int,	
+protein_val int)	
+
+insert into input_spec values('Ash 12345 Mix',12);	
+insert into input_spec values('Moisture 1234 TY',13);
+insert into input_spec values('Protein 12A',10);
+insert into input_spec values('Ash ABC 124',11);
+insert into input_spec values('Moisture Winter Wheat',14);
+		
+select * from input;
+
+drop table input_spec;
+
+create or replace procedure sp_spec as
+      cursor cur_spec is
+      select specification_mix,actual_val
+      from input_spec;
+      v_count number(5);
+begin
+    for i in cur_spec loop
+      select count(*) into v_count
+      from output_spec
+      where specification_mix=i.specification_mix
+      and actual_val=i.actual_val;
+        if v_count=0 then
+          if i.specification_mix like 'Ash%' then
+             insert into output_spec values(i.specification_mix,i.actual_val,i.actual_val,0,0);
+         elsif i.specification_mix like 'Moisture%' then
+             insert into output_spec values(i.specification_mix,i.actual_val,0,i.actual_val,0);
+        elsif i.specification_mix like 'Protien%' then
+             insert into output_spec values(i.specification_mix,i.actual_val,0,0,i.actual_val);
+        else
+           dbms_output.put_line('do not insert');
+          end if;
+        end if;
+    end loop;
+end;
+
+
+exec sp_spec;
+
+set serveroutp on
+
+select * from output_spec;
+
+select * from input_spec;
