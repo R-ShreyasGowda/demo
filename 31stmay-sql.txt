@@ -1,0 +1,164 @@
+create table product_day6
+(prod_bkey varchar2(5) PRIMARY KEY,
+prod_name varchar2(20),
+price number(10),
+family varchar2(20)
+);	
+
+
+insert into product_day6 values('p1','laptop',30000,'electronics');
+insert into product_day6 values('p2','headphone',3000,'electronics');
+insert into product_day6 values('p3','earphone',100,'electronics');
+insert into product_day6 values('p4','chocolates',100,'food');
+insert into product_day6 values('p5','biscuits',50,'food');
+insert into product_day6 values('p6','chips',80,'food');
+
+
+create table customer_day6
+(cust_bkey varchar2(5) PRIMARY KEY,
+cust_name varchar2(20),
+dob date,
+phone number(10),
+address varchar2(20),
+city varchar2(20),
+zip number(10),
+state varchar2(20)
+);
+
+
+
+insert into customer_day6 values('201','Megh','05-02-1994',8544144889,'BTM','BLR',560058,'KA');
+insert into customer_day6 values('202','Raj','15-11-1944',7903635071,'Marathalli','BLR',560073,'KA'); 
+insert  into customer_day6 valueS('203','Rakesh','15-01-1995',8102742599,'e_city','BLR',560023,'KA');
+insert  into customer_day6 values('204','Megha','05-04-1996',8544144886,'Rameshwaram','CHN',560038,'TN');
+insert  into customer_day6 values('205','Rani','25-01-2001',8544144889,'Bodhgaya','CHR',560075,'AN') ;
+
+
+
+create table sales_day7
+(salesid number(5),
+cus_bkey varchar2(5) references customer_day6(cust_bkey),
+pro_bkey varchar2(5) references product_day6(prod_bkey),
+stor_bkey varchar2(5) references stores_day7(store_bkey),
+qty number(10),
+sales_amount number(10),
+sales_date date
+);
+
+
+
+
+insert into sales_day7 values(301,202,'p2',502,20,23000,'22-04-20');
+insert into sales_day7 values(302,201,'p1',505,20,34000,'13-12-21');
+insert into sales_day7 values(303,205,'p3',503,20,45000,'29-03-20');
+insert into sales_day7 values(304,204,'p4',502,20,67000,'19-06-19');
+insert into sales_day7 values(305,202,'p6',500,20,78000,'20-11-18');
+insert into sales_day7 values(306,203,'p5',504,20,289000,'24-05-20');
+insert into sales_day7 values(307,205,'p2',503,20,89000,'20-05-19');
+insert into sales_day7 values(308,204,'p4',505,20,26000,'22-05-19');
+
+
+
+create table stores_day7
+(store_bkey varchar2(5) primary key,
+store_name varchar2(20),
+address varchar2(20),
+phone number(10),
+city varchar2(20),
+zip number(10),
+state varchar2(20)
+);
+
+insert  into stores_day7 values(500,'ganesh store','btm layout',9786543211,'bangalore',560057,'krn');
+insert into stores_day7 values(502,'Arun','thiruvaram',8896044567,'ashoka pillar',560056,'chn');
+insert into stores_day7 values(503,'Pallavi','erode',9976540987,'nandanam',560055,'tm');
+insert into stores_day7 values(504,'Akash','South end circle',8800997766,'mysore',5689,'kar');
+insert into stores_day7 values(505,'Manoj','jaynagar',8800997766,'Bellary',43546,'kar');
+
+SELECT * FROM product_day6;
+SELECT * FROM customer_day6;
+select * from stores_day7;
+select * from sales_day7;
+
+---1.	Get the customer names who made sales on or before 1st jan 2014.
+SELECT CUST_NAME
+FROM customer_day6 C,sales_day7 S
+WHERE C.CUST_BKEY=S.CUS_BKEY AND
+SALES_DATE<'01-01-2014';
+
+UPDATE sales_day7 SET SALES_DATE='30-01-2022' WHERE SALESID=301;
+
+--2.	Get the customer names who made sales yesterday and today.
+SELECT CUST_NAME
+FROM customer_day6  C,sales_day7 S
+WHERE C.CUST_BKEY=S.CUS_BKEY AND
+TO_CHAR(SALES_DATE,'DD-MM-YYYY')=TO_CHAR(SYSDATE,'DD-MM-YYYY')
+UNION ALL
+SELECT CUST_NAME
+FROM customer_day6  C,sales_day7 S
+WHERE C.CUST_BKEY=S.CUS_BKEY  
+AND TO_CHAR(SALES_DATE,'DD') = TO_CHAR(SYSDATE,'DD')-1;
+
+SELECT SALES_DATE FROM SALES_DAY7 
+WHERE TO_CHAR(SALES_DATE,'DD') = TO_CHAR(SYSDATE,'DD')-1;
+
+
+SELECT * FROM sales_day7;
+
+SELECT TO_CHAR(SYSDATE,'DD-MM-YY')-1 FROM DUAL;
+
+---3.	Get the customer names who made max total sale (qty*price) on 1st jan 2014.
+SELECT CUST_NAME
+FROM (SELECT MAX(QTY*PRICE),PROD_BKEY
+FROM sales_day7 S,PRODUCT_DAY6 P
+WHERE S.PRO_BKEY=P.PROD_BKEY AND SALES_DATE='01-01-2014'
+GROUP BY PROD_BKEY)A,CUSTOMER_DAY6 C,SALES_DAY7 S
+WHERE A.PROD_BKEY=S.PRO_BKEY AND C.CUST_BKEY=S.CUS_BKEY;
+
+
+4.	Get the customer name who bought ELECTRONIC GADGETS.
+SELECT CUST_NAME
+FROM customer_day6 C,product_day6 P,sales_day7 S
+WHERE P.PROD_BKEY=S.PRO_BKEY AND C.CUST_BKEY=S.CUS_BKEY
+AND FAMILY = 'electronics';
+
+5.	Get the details of products which has not been sold till today.
+select * from product_day6
+where prod_bkey not in (select pro_bkey 
+                        from sales_day7
+                        WHERE SALES_DATE<SYSDATE);
+                        
+insert into product_day6 values('p7','mobile',22000,'gadgest');
+
+6.	Get the total sale value (qty*price) of each product.---doubt--
+select SUM(qty*PRICE),PROD_BKEY
+FROM sales_day7 S,PRODUCT_DAY6 P
+WHERE S.PRO_BKEY=P.PROD_BKEY
+group by proD_bkey;
+
+select * from sales_day7;
+
+
+select sum(2*3)as adds from dual;
+
+7.	Display the unique product names.
+select distinct prod_name 
+from product_day6;
+
+8.	Display the products which are sold in the first quarter of current year.
+select prod_name 
+from product_day6 P,SALES_DAY7 S
+WHERE P.PROD_BKEY=S.PRO_BKEY AND TO_CHAR(SALES_DATE,'Q')=1
+AND TO_CHAR(SALES_DATE,'YYYY') = TO_CHAR(SYSDATE,'YYYY'); 
+
+
+
+9.GET THE CUSTOMER NAME WHO BOUGHT ABC MANUFACTURERERS---
+SELECT CUST_NAME
+FROM (SELECT CUS_BKEY 
+    FROM SALES_DAY7
+    WHERE PRO_BKEY IN(SELECT PROD_BKEY
+    FROM PRODUCT_DAY6 WHERE M_ID =(SELECT M_ID 
+    FROM  manufacture_tbl 
+    WHERE M_NAME='ABC')))A,customer_day6 C
+    WHERE C.CUST_BKEY=A.CUS_BKEY;
