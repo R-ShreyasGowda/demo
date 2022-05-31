@@ -1,0 +1,39 @@
+create or replace procedure sp_contract as
+   cursor cont is
+   select * from cont_tab;
+   cnt number :=0;
+   vcnt number(10) :=0;
+   start_date date;
+begin
+    for i in cont loop
+    select count(*) into cnt
+    from expd_rcv_tab
+    where exp_rec_date = i.cont_s_date
+    and contract_id=i.contract_id;
+        if cnt =0 then
+           vcnt := months_between(i.cont_e_date,i.cont_s_date);
+           start_date := add_months(i.cont_s_date,vcnt);
+              if i.cpt_id=100 then
+                  while i.cont_s_date<start_date loop
+                      insert into expd_rcv_tab values(expd.nextval,i.cont_s_date,i.contract_id,i.cont_amt/vcnt);                    
+                          i.cont_s_date := add_months(to_char(i.cont_s_date),1);
+                      end loop;  
+              elsif i.cpt_id=101 then
+                  while i.cont_s_date<start_date loop
+                      insert into expd_rcv_tab values(expd.nextval,i.cont_s_date,i.contract_id,(i.cont_amt)/vcnt*2);                    
+                          i.cont_s_date := add_months(to_char(i.cont_s_date),3);
+                      end loop;    
+              elsif i.cpt_id=102 then
+                  while i.cont_s_date<start_date loop
+                      insert into expd_rcv_tab values(expd.nextval,i.cont_s_date,i.contract_id,(i.cont_amt)/vcnt*3);                    
+                          i.cont_s_date := add_months(to_char(i.cont_s_date),6);
+                      end loop;  
+              elsif i.cpt_id=103 then
+                  while i.cont_s_date<start_date loop
+                      insert into expd_rcv_tab values(expd.nextval,i.cont_s_date,i.contract_id,(i.cont_amt)/vcnt*6);                    
+                          i.cont_s_date := add_months(to_char(i.cont_s_date),12);
+                      end loop;  
+             end if;
+        end if;
+   end loop;
+end;
