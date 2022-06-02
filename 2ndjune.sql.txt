@@ -1,0 +1,150 @@
+create table country
+(country_id number(6) primary key,
+country_name varchar2(20));
+
+create table resort
+(resort_id number(4) primary key,
+resort_name varchar2(20),
+country_id number(2) references country(country_id));
+
+create table c_r_customer
+(cust_id number(5) primary key,
+cust_name varchar2(20),
+phone number(10),
+country_id number(2) references country(country_id));
+
+insert all
+into country values(1,'US')
+into country values(2,'UK')
+into country values(3,'INDIA')
+select * from dual;
+
+commit;
+
+insert all
+into resort values(10,'Blue valley',1)
+into resort values(20,'Beach front',1)
+into resort values(30,'Taj Oberai',2)
+into resort values(40,'Taj Maldives',3)
+into resort values(50,'Golden Flowers',2)
+into resort values(60,'Taj valley',1)
+select * from dual;
+
+commit;
+
+insert all
+into customer_r values(1001,'tim downey',345231458,1)
+into customer_r values(1002,'ramesh k',89327648,2)
+into customer_r values(1003,'bill price',78326753,1)
+into customer_r values(1004,'malinga',98564231,3)
+into customer_r values(1005,'farooq',45893121,3)
+select * from dual;
+
+commit;
+
+--1.Query to find out number of resorts based on country.--
+
+select country_name,count(resort_id)
+from country c,resort r
+where c.country_id=r.country_id
+group by country_name;
+
+
+--2.Query to display country wise customer count.--
+
+select count(cust_id),country_name
+from c_r_customer cr,country c
+where c.country_id=cr.country_id
+group by country_name;
+
+
+3.	Query to display country, resort count and customer count.
+
+select country_name,count(distinct(cust_id)),count(distinct(resort_id))
+from country c,c_r_customer cr,resort r
+where c.country_id=cr.country_id and
+cr.country_id=r.country_id
+group by country_name;
+
+--4.Display Resort country name, resort name, customer name and customer country name.--
+
+select resort_name,cust_name,country_name
+from country c,c_r_customer cr,resort r
+where c.country_id=cr.country_id and cr.country_id=r.country_id;
+
+
+--5.Display countries in which we don’t have any resorts.--
+
+select country_name
+from country
+where country_id not in (select distinct(country_id) from resort);
+
+
+--6.Display countries in which we have minimum of 100 customers.--
+
+select country_name
+from country c,c_r_customer cr
+where c.country_id=cr.country_id 
+group by country_name
+having count(cust_id)>100;
+
+
+--7.Display how many resorts we have in the country where resort ‘Beach front’ is?--
+
+select country_name,count(resort_id)
+from country c,resort r
+where c.country_id=r.country_id
+and resort_name='beach front'
+group by country_name;
+
+select * from resort;
+select * from country;
+select * from customer_r;
+
+
+--8.Display customers whose name starts with F or R and who are either from India or Srilanka.--
+
+select cust_name
+from c_r_customer cr,country c
+where c.country_id=cr.country_id
+and country_name like 'india' or country_name like 'srilanka'
+and cust_name like 'f%' or cust_name like 'r%';
+
+
+--9.Display customer names who are from US and do not have any phone numbers.--
+
+select cust_name
+from c_r_customer
+where phone = null and country_id = (select country_id from country
+where country_name ='US');
+
+select * from customer_r;
+
+--10.Display Country name, resort name. Display all the countries whether we have resorts or not.--
+
+select country_name,resort_name
+from country c,resort r
+where c.country_id=r.country_id(+);
+
+
+--11.Display countries which have more resorts than the no of resorts in country India.--
+
+select c.country_name,count(r.resort_id)
+from country c,resort r
+where c.country_id=r.country_id
+group by country_name
+having count(resort_id) > (select count(resort_id) 
+                           from resort r,country c
+                           where c.country_id=r.country_id
+                           and country_name = 'INDIA');
+
+
+--12.Display all the countries and resorts, if the country doesn’t have resort display as ‘no resort’.--
+
+select nvl(resort_name,'no resort'),country_name
+from country c, resort r
+where c.country_id(+)=r.country_id
+union
+select nvl(resort_name,'no resort'),country_name
+from country c, resort r
+where c.country_id=r.country_id(+);
