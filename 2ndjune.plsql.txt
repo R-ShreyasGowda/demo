@@ -1,0 +1,182 @@
+Create table guests
+(name varchar2(20),
+Phone number(10),         
+City varchar2(20),
+Pro_flg char(1));
+
+
+insert into guests (name,phone,city) values('rajesh',783738,'blr');
+insert into guests (name,phone,city) values('bala',78939,'chn');
+insert into guests (name,phone,city) values('arun',892393,'del');
+insert into guests (name,phone,city) values('john',770260,'blr');
+insert into guests (name,phone,city) values('gundu',77026089,'blr');
+insert into guests (name,phone,city) values('tom',8555900,'hyd');
+
+Create table customer_guest
+(c_id number(4),
+c_nm varchar2(20),
+c_phone number(10),
+c_city varchar2(20));
+
+insert into customer_guest values(1,'raj',12345,'blr');
+insert into customer_guest values(2,'rani',989734,'hyd');
+insert into customer_guest values(3,'kimm',878384,'chn');
+insert into customer_guest values(4,'rajesh',783738,'blr');
+insert into customer_guest values(6,'arun',892393,'del');
+
+create table call
+(call_id number(10),
+c_nm varchar2(20),
+phone number(10),
+city varchar2(20));
+
+SELECT * FROM CALL;
+SELECT * FROM GUESTS;
+SELECT * FROM CUSTOMER_GUEST;
+
+
+CREATE OR REPLACE PROCEUDRE GUEST_SP AS
+CURSOR GET_CUR AS
+V_NAME VARCHAR(20);
+V_NO NUMBER(20);
+BEGIN 
+
+--UPDATIG USING PROCEDURE--
+CREATE OR REPLACE PROCEDURE GUEST_SP AS
+CURSOR GT_CUR IS
+select c.cust_id,sum(amount) as total_amt
+from customer_retail c,sales_retail s
+where c.cust_id=s.cust_id
+group by c.cust_id;
+var_grade char(1);
+begin
+FOR I IN GT_CUR loop
+if I.TOTAL_AMT >7000 then
+var_grade := 'A';
+elsif I.TOTAL_AMT between 5000 and 7000 then
+var_grade := 'B';
+elsif I.TOTAL_AMT between 2000 and 5000 then
+var_grade := 'C';
+elsif I.TOTAL_AMT>0 and I.TOTAL_AMT<2000 then
+var_grade :='D';
+else
+var_grade :='E';
+end if;
+update customer_retail set grade=var_grade
+where cust_id =I.CUST_id;
+end loop;
+commit;
+end;
+
+--DISPLAY CUST_NAME, COUNT OF SALES_ID USING PROCEDURE IN PLSQL
+EXEC GUEST_SP;
+SET SERVEROUTPUT ON
+CREATE OR REPLACE PROCEDURE G_SP AS
+CURSOR CUST_SALES IS 
+SELECT CUST_NAME,COUNT(SALES_ID)AS NUM_OF_SALES
+FROM CUSTOMER_RETAIL C , SALES_RETAIL S
+WHERE C.CUST_ID=S.CUST_ID
+GROUP BY CUST_NAME;
+BEGIN 
+FOR I IN CUST_SALES LOOP
+DBMS_OUTPUT.PUT_LINE(I.CUST_NAME||','||I.NUM_OF_SALES);
+END LOOP;
+END;
+SET SERVEROUTPUT ON
+EXEC G_SP;
+SELECT * FROM CUSTOMER_RETAIL;
+SELECT * FROM SALES_RETAIL;
+
+--USING FUNCTION--
+CREATE OR REPLACE FUNCTION FN_CNT RETURN NUMBER AS
+V_CNT INT;
+BEGIN
+SELECT COUNT(*)INTO V_CNT
+FROM CUSTOMER_RETAIL;
+RETURN V_CNT;
+END;
+
+SELECT FN_CNT FROM DUAL;
+
+--TO PRINT CUST_NAME--
+CREATE OR REPLACE FUNCTION FNC_CNT RETURN VARCHAR2 AS
+V_NM VARCHAR2(20);
+BEGIN
+SELECT CUST_NAME INTO V_NM
+FROM CUSTOMER_RETAIL
+WHERE CUST_ID = 1103;
+RETURN V_NM;
+END;
+SELECT FNC_CNT FROM DUAL;
+
+--TAKING INPUT IN FUNCTION--
+CREATE OR REPLACE FUNCTION FNCT_CNT(P_NO IN NUMBER,P_SAL OUT NUMBER) RETURN VARCHAR2 AS
+V_NM VARCHAR2(20);
+V_SAL NUMBER(10);
+BEGIN
+SELECT EMP_NAME,CTC INTO V_NM,V_SAL
+FROM EMP1
+WHERE EMP_ID = P_NO;
+RETURN V_NM;
+END;
+
+--BELOW BLOCK DOESNOT WORK--
+VARIABLE B_SAL NUMBER
+SELECT FNCT_CNT(100,:B_SAL)FROM DUAL
+PRINT :B_SAL
+
+SET SERVEROUTPUT ON
+--USING OTHER METHOD CALLING--
+DECLARE 
+V_NM VARCHAR2(20);
+V_SAL NUMBER(10);
+BEGIN
+V_NM := FNCT_CNT(100,V_SAL);
+DBMS_OUTPUT.PUT_LINE(V_NM||','||V_SAL);
+END;
+
+SELECT * FROM EMP1
+
+COMMIT;
+
+---ASSIGNMENT--
+CREATE OR REPLACE PROCEDURE GET_CUST AS
+V_CH NUMBER(2);
+V_CH1 NUMBER(2);
+CURSOR GET_CUST IS SELECT NAME,PHONE,CITY
+                    FROM GUESTS;
+BEGIN
+FOR I IN GET_CUST LOOP
+SELECT COUNT(*)INTO V_CH
+FROM CUSTOMER_GUEST
+WHERE C_NM=I.NAME AND C_PHONE=I.PHONE AND C_CITY=I.CITY;
+IF V_CH=0 THEN
+SELECT COUNT(*) INTO V_CH1
+FROM CALL
+WHERE I.NAME=I.NAME AND I.PHONE=I.PHONE AND I.CITY=I.CITY;
+IF V_CH1=0 THEN
+INSERT INTO CALL VALUES(SQ_CUST.NEXTVAL,I.NAME,I.PHONE,I.CITY);
+UPDATE GUESTS SET PRO_FLG='Y' WHERE NAME=I.NAME AND PHONE=I.PHONE AND CITY=I.CITY;
+ELSE
+DELETE FROM GUESTS WHERE NAME=I.NAME AND PHONE=I.PHONE AND CITY=I.CITY;
+END IF;
+END IF;
+ END LOOP;
+ END;
+ 
+EXCEPTION
+WHEN DUP_VAL_ON_INDEX THEN
+DBMS_OUTPUT.PUT_LINE('DUPLICATE RECORD');
+END;
+
+EXEC GET_CUST;
+
+CREATE SEQUENCE SQ_CUST
+START WITH 1
+INCREMENT BY 1
+MINVALUE 1
+MAXVALUE 100
+CYCLE;
+
+SELECT * FROM CALL;
+SELECT * FROM GUESTS;
