@@ -1,0 +1,83 @@
+create or replace procedure a_h_n(p_id accounts_t.a_no%type)as
+p_nm c_a_t.cust_name%type;
+begin
+select cust_name into p_nm 
+from c_a_t c,accounts_t t
+where c.cust_bkey=t.cust_bkey
+and a_no=p_id;
+dbms_output.put_line('p_nm');
+exception
+when no_data_found then
+dbms_output.put_line('no such record');
+end;
+
+exec a_h_n(100);
+
+set serveroutput on
+
+
+
+create or replace procedure value_err as
+salary emp.sal%type;
+begin
+select ename into salary
+from emp
+where empno=7788;
+exception
+when value_error then
+dbms_output.put_line('storing in wrong variable');
+end;
+
+exec value_err;
+
+create or replace procedure sp_invalid as
+v_e emp.ename%type;
+begin
+select ename into v_e
+from emp
+where empno='aajaj';
+exception
+when invalid_number then
+dbms_output.put_line('invalid data');
+end;
+
+exec value_err;
+
+--if denominator is 0 then zero_divide not on quotient--
+
+create or replace procedure zero_div(p_no number) as
+v_res number(5);
+begin
+v_res :=p_no/0;
+exception
+when zero_divide then
+dbms_output.put_line('zero divide error');
+when others then
+dbms_output.put_line(sqlcode ||' '||sqlerrm);
+end;
+
+exec zero_div(10); 
+
+select * from emp;
+
+create or replace procedure dup_val as
+begin
+insert into emp(empno,ename) values(7369,'shreyas');
+exception
+when dup_val_on_index then
+dbms_output.put_line('duplicate value cannont insert');
+end;
+
+create or replace procedure dup_val as
+begin
+insert into emp(empno,ename) values(7368,'shreyas');
+exception
+when dup_val_on_index then
+dbms_output.put_line('already data present');
+end;
+
+set serveroutput on;
+
+exec dup_val;
+
+select * from emp;
