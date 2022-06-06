@@ -1,0 +1,298 @@
+--------------------CURSORS----------------------------------------
+
+--1. Write a procedure to display the records of employees whose salary is greater than 10000.
+
+create or replace procedure sp_ename as
+  cursor cur_ename is 
+     select empno,sal,ename,job,hiredate,deptno 
+     from emp
+     where sal>1000;
+begin
+   for i in cur_ename loop
+     dbms_output.put_line(i.empno || ' ' ||i.sal || ' ' ||i.ename|| ' '||i.job || ' '||i.hiredate || ' '||i.deptno);
+   end loop;
+end;
+
+exec sp_ename;
+
+select * from emp;
+
+--2. Write a procedure to increment the salary of an employee based on his salary--
+--if salary>2000 increment by 1500--
+--if salary>1000 increment by 1000--
+--if salary>5000 increment by 500--
+--else ‘no increment’--
+
+
+create or replace procedure sp_salincrement as
+emp_no number(20);
+emp_name varchar2(20);
+emp_sal number(20);
+cursor get_icr is 
+select empno,ename,sal into emp_no,emp_name,emp_sal
+from emp for update of sal;
+begin
+for i in get_icr loop
+if i.sal >2000 then
+update emp set sal=sal+1500 
+where current of get_icr;
+elsif i.sal>1000 then
+update emp set sal=sal+100
+where current of get_icr;
+elsif i.sal>5000 then
+update emp set sal=sal+500
+where current of get_icr;
+else 
+dbms_output.put_line('NO INCREMENT');
+end if;
+end loop;
+end;
+
+create or replace procedure sp_salincrement as
+emp_no number(20);
+emp_name varchar2(20);
+emp_sal number(20);
+cursor get_icr is 
+select empno,ename,sal
+from emp;
+begin
+for i in get_icr loop
+if i.sal >2000 then
+update emp set sal=sal+1500;
+elsif i.sal>1000 then
+update emp set sal=sal+100;
+elsif i.sal>5000 then
+update emp set sal=sal+500;
+else 
+dbms_output.put_line('NO INCREMENT');
+end if;
+end loop;
+end;
+
+select * from emp;
+
+exec sp_salincrement;
+
+--3. write a procedure to print total salary with respect to department.(deptwise total sal)--
+
+create or replace procedure sp_totsal_dpt as
+  cursor cur_sumsal is 
+    select sum(sal)tot_sal,deptno 
+    from emp 
+    group by deptno;
+begin
+   for i in cur_sumsal loop
+     dbms_output.put_line(i.deptno||','||i.tot_sal);
+   end loop;
+end;
+
+exec sp_totsal_dpt;
+
+--4. Write a procedure to print ename, job, mgr and deptno using record type by passing the empno at runtime.---doubt
+
+create or replace procedure sp_ejmd(e_no number) as
+  e_name varchar2(20);
+  e_job number(10);
+  e_mgr varchar2(20);
+  deptn number(10);
+begin
+  select ename,job,mgr,deptno into e_name,e_job,e_mgr,deptn
+  from emp 
+  where empno=e_no;
+    dbms_output.put_line(e_name ||','||e_job ||','||e_mgr ||','||deptn);
+end;
+
+exec sp_ejmd(7368);
+
+select * from emp;
+
+--5. Write a procedure to delete the duplicate records using cursor.--
+
+insert into emp values (1231,'BLAKE','PRESIDENT',253,'20-12-1999',23000,200,30);
+
+create or replace procedure sp_duprec as 
+begin
+delete from emp
+where rowid not in (select max(rowid)   
+                    from emp 
+                    group by ename);
+end;
+
+exec sp_duprec;
+
+
+--6. Write a procedure to print top 5 employees based on the salary in each dept using cursor.--
+
+create or replace procedure sp_top5emp as
+emp_name varchar2(20);
+emp_sal number(20);
+dept_no number(20);
+cursor get_sal is 
+    select ename,sal,deptno
+    from (select ename,sal,deptno,dense_rank() over (partition by deptno order by sal desc)r
+          from emp)
+    where r<5;
+begin
+   for i in get_sal loop
+      dbms_output.put_line(i.ename||',' ||i.sal ||',' || i.deptno);
+   end loop;
+end;
+
+exec sp_top5emp;
+
+--7.Write a procedure to print the Output as--
+--deptname :accounts--
+--john--
+--smith--
+--deptname: hr--
+--clark--
+--miller--
+
+create or replace procedure sp_parcur as
+cursor cur_dept is 
+select deptno,dname 
+from dept;
+cursor cur_deptno(p_eno number) is 
+select ename 
+from emp 
+where deptno=p_eno;
+
+begin
+    for i in cur_dept loop
+       dbms_output.put_line('Deptname : ' ||i.dname);
+        for j in cur_deptno (i.deptno) loop
+            dbms_output.put_line(j.ename);
+        end loop;
+    end loop;
+end;
+
+exec sp_parcur;
+
+select * from dept;
+
+
+--8.write a procedure to update the salary of employees by giving an increment of 2000 which belongs to dept10 and display how many rows updated.--
+
+
+create or replace procedure sp_salinc_dept as
+v_inc number :=2000;
+v_count number;
+begin
+update emp set sal = sal+v_inc
+where deptno =10;
+v_count:=sql%rowcount;
+dbms_output.put_line('ROWS UPDATE'||v_count);
+end ;
+
+exec sp_salinc_dept;
+
+
+--9. Write a plsql program using SQL%Found,SQL%Notfound and SQL%Rowcount.--
+
+create or replace procedure sp_implicit_cur(p_no int) as
+e_sal number(20);
+emp_no number(20);
+v_count number;
+begin
+select sal into e_sal 
+from emp
+where empno=p_no;
+dbms_output.put_line('EMPLOYEE SAL IS ' || e_sal);
+if sql%found then
+dbms_output.put_line('EMPLOYEE EXITS');
+elsif sql%notfound then
+dbms_output.put_line('EMPLOYEE DOES NOT EXITS');
+end if;
+v_count:=sql%rowcount;
+dbms_output.put_line(v_count);
+end;
+
+exec sp_implicit_cur(7369);
+
+select * from emp;
+
+
+-------------------------FUNCTIONS-----------------------
+
+--Create a function that takes date as input and return the no of customers who made sales in that year.
+
+create or replace function fn_cust_sale(p_n date)
+return number as
+v_count number;
+begin
+select count(*) into v_count
+from customer_retail c ,sales_retail s
+where c.cust_id = s.cust_id
+and to_char(sales_date,'yyyy') = to_char(p_n,'yyyy');
+return v_count;
+end;
+
+select fn_cust_sale('01-jan-2020') from dual;
+
+--Write a function which takes a value from the user and check whether the given values is a number or not.If it is a number, return ‘ valid Number’ otherwise ‘invalid number’.Phone Number- should have 10 digits, all should be numbers and phno should start with 9 or 8 or 7.--
+
+create or replace function sf_mob_num(mobil varchar2)
+return varchar2 as
+begin
+if  length(to_char(mobil)) = 10 and substr(mobil,1,1) in (9,8,7) then
+return 'valid number';
+else
+return 'invalid number';
+end if;
+end;
+
+select sf_mob_num('8656478545') from dual;
+
+--Write a function to print the factorial of a number without using loop(Hint:Use recursive function)
+
+create or replace function sp_fact_recursive(n number) return number as
+
+begin
+if n = 1 then
+return n;
+else
+return n * factorial_recursive(n-1);
+end if;
+end;
+ 
+select factorial_recursive(5) from dual;
+
+--Write a function which takes a date in string format and display whether it is a valid date or not.--
+
+create or replace function sf_date_validation(p_date varchar2) 
+return varchar2 as
+v_date date;
+begin 
+v_date := to_date(p_date,'dd-mm-yyyy');
+if p_date = v_date then
+return 'valid date';
+else
+return 'not valid date';
+end if;
+end;
+
+--Write a function that takes P,R,T as inputs and returns SI. SI=P*R*T/100
+
+create or replace function sf_si(p number,r number,t number)
+return number as
+s_i number;
+begin
+s_i := p*r*t/100;
+return s_i;
+end;
+
+select sf_si(200,6,7) from dual;
+
+--Write a function to print the factorial of a number.
+
+create or replace function sf_factorial(v_a number)
+return number as
+res number(10) :=1;
+begin
+for i in 1..v_a loop
+res :=res*i;
+end loop;
+return res;
+end;
+
+select sf_factorial(8) from dual;
