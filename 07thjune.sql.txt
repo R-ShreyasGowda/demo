@@ -1,0 +1,145 @@
+
+--Write a procedure to divide the salary of all employees by its commission and handle zero divide exception--
+-- and also insert the divided value into a table, also include when others then exception.--
+
+declare
+v_sal number(5);
+v_comm number(5);
+v_res number(5);
+cursor cur_emp is
+select sal,comm
+from emp;
+begin 
+   for i in cur_emp loop
+    begin
+       v_res:=i.sal/nvl(i.comm,0);
+       insert into employ values(v_res);
+       exception
+       when zero_divide then
+       dbms_output.put_line('cannot divide');
+     end;
+    end loop;
+exception
+when others then
+dbms_output.put_line('can divide');
+end;
+
+select * from employ;
+
+--Write a procedure to print ename and dname by passing empno and deptno.--
+--If u pass invalid empno and valid deptno, it has to print ‘Invalid empno’ and print dname.--
+--If u pass valid empno and invalid deptno, it has to print ename and  ‘invalid deptno’.--
+-- If u pass both valid then it has to print ename and dname.--
+-- If u pass both invalid then print ‘invalid empno’ and ‘invalid deptno’, also include when others then exception.--
+
+declare
+v_ename varchar2(20);
+v_dname varchar2(20);
+v_deptno number(4):=2;
+v_empno number(4):=7369;
+begin
+    begin
+      select ename into v_ename
+      from emp
+      where empno=v_empno;
+          dbms_output.put_line(v_ename ||''|| ' exists');
+      exception
+       when no_data_found then
+         dbms_output.put_line(v_ename ||''|| ' does not exists');
+     end;  
+     select dname into v_dname
+     from department
+     where deptno=v_deptno;
+          dbms_output.put_line(v_dname ||''|| ' exists');
+     exception
+       when no_data_found then
+          dbms_output.put_line(v_dname ||''|| ' does not exists');
+end;
+
+--Write a procedure by passing the date and display the whether the year is leap year or not.
+
+--select to_char(sysdate,'yyyy') from dual;--
+
+create or replace procedure sp_leapyear(year date)as
+v_l number:=to_char(year,'yyyy');
+begin
+     if mod(v_l,4)=0 then 
+     dbms_output.put_line (v_l||' is leap year');
+      else 
+      dbms_output.put_line (v_l||' is not leap year');
+     end if;
+end; 
+
+exec sp_leapyear('01-jun-1982');
+
+
+
+--Write a procedure which takes product name and print a message if it made sales today or not?--
+
+create or replace procedure sp_prodname(product_name varchar2) as
+p_count int;
+begin
+   select count(*) into p_count
+   from product_retail p ,sales_retail s
+   where p.prod_id =s.prod_id
+   and sales_date = sysdate
+   and  p_name =product_name;
+    if p_count=0 then
+      dbms_output.put_line (product_name||' not made sale today');
+    else
+        dbms_output.put_line (product_name||' sales happend');
+    end if;
+end;  
+
+select * from product_retail;
+
+exec sp_prodname('tv');
+
+
+--Write a procedure which takes product name and print the no. of sales it made in the current year and in previous year.
+
+create or replace procedure sp_count_of_product(product_name varchar) as
+   v_count number;
+   v_count1 number;
+ 
+begin
+  select count(p_name) into v_count
+  from sales_retail s,product_retail p
+  where s.prod_id=p.prod_id and  p_name=product_name and to_char(sales_date,'yyyy') = to_char(sysdate,'yyyy') ;
+  dbms_output.put_line(v_count);
+ 
+  select count(p_name) into v_count1
+  from sales_retail s,product_retail p
+  where s.prod_id=p.prod_id and  p_name=product_name and to_char(sales_date,'yyyy') = to_char(sysdate,'yyyy')-1 ;
+  dbms_output.put_line(v_count1);
+  end ;
+  
+  exec sp_count_of_product('tv');
+
+--Write a procedure to populate all the records from cust_src to 
+--cust_tgt but the condition is there should not be any duplicate records.
+--Cust_src
+--Cust_id		cust_name	cust_addr	cust_city
+
+--Cust_tgt
+--Cust_id		Cust_name	cust_addr	Cust_city
+/
+create or replace procedure sp_t_s as
+cursor c is  
+          select Cust_id,Cust_name,cust_addr,Cust_city
+          from cust_src;
+v_cnt number;
+begin
+    for i in c loop
+       select count(*) into v_cnt
+        from cust_src
+        where cust_id = i.cust_id;
+      if v_cnt =0 then
+      insert into cust_tgt values (i.cust_id,i.cust_name,i.cust_addr,i.cust_city);
+      else
+       dbms_output.put_line('there is dup val');
+       end if;
+  end loop;
+end;
+
+exec sp_t_s;
