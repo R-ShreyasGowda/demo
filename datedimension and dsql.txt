@@ -1,0 +1,97 @@
+-----Write a Stored Procedure by passing a table name at run time and display all its details---
+    --No of rows
+    --No of columns
+    --No of constraints
+    --No of triggers
+    --owner of the table
+
+create or replace procedure sp_dsql(user_table varchar2)as
+v_count number(10);
+v_str varchar2(100);
+v_a varchar2(100);
+begin
+v_str := 'select count(*)from '|| user_table;
+execute immediate v_str into v_count;
+dbms_output.put_line('no of rows ' ||v_count);
+v_str := 'select count(*) from user_tab_columns where table_name=' ||''''||user_table||'''';
+execute immediate v_str into v_count;
+dbms_output.put_line('no of columns ' ||v_count);
+v_str := 'select count(*) from user_constraints where table_name=' ||''''||user_table||'''';
+execute immediate v_str into v_count;
+dbms_output.put_line('no of constraints ' ||v_count);
+v_str := 'select count(*) from user_triggers where table_name=' ||''''||user_table||'''';
+execute immediate v_str into v_count;
+dbms_output.put_line('no of triggers ' ||v_count);
+v_str := 'select distinct owner  from user_constraints ';
+execute immediate v_str into v_a;
+dbms_output.put_line(v_a);
+exception
+when others then
+dbms_output.put_line('invalid');
+end;
+
+exec sp_dsql('EMP')
+
+create table date_dimensions
+(date_key int,
+accurate_date date,
+day_number_of_week int,
+day_number_of_month int,
+day_number_of_year int,
+week_no_of_month int,
+week_no_year int,
+month_no int,
+month_short_name varchar(20),
+month_full_name varchar(20),
+qtr_no int,
+semester_no int,
+CALENDER_YEAR NUMBER(10),
+week_day_flag varchar(10));
+
+create or replace procedure sp_datedim(v_year varchar2)as
+start_date date;
+end_date date;
+val_error exception;
+v_count number;
+invalid_datatype exception;
+pragma exception_init(invalid_datatype,-01841);
+begin
+start_date := trunc(to_date(v_year,'YY'),'YY');
+end_date := add_months(start_date,12)-1;
+while start_date<=end_date loop
+insert into date_dimensions
+(select datedim.nextval,start_date ,
+    to_char(start_date,'D'),
+    to_char(start_date,'DD'),
+    to_char(start_date,'DDD'),
+    to_char(start_date,'W'),
+    to_char(start_date,'WW'),
+    to_char(start_date,'MM'),
+    to_char(start_date,'MON'),
+    to_char(start_date,'MONTH'),
+    to_char(start_date,'Q'),
+    case 
+    when to_char(sysdate,'MM') between 1 and 6 then 1
+    else 2
+    end semesterno,
+    to_char(sysdate,'YYYY'),
+    case
+    when to_char(sysdate,'D') in (2,3,4,5,6) then 'WEEKDAY'
+    else 'WEEKEND'
+    end week_day_flag 
+from dual);
+start_date := start_date + 1;
+end loop;
+raise val_error;
+exception
+when val_error then
+dbms_output.put_line('INVALID CREDENTIALS');
+when invalid_datatype then
+dbms_output.put_line(sqlcode || ' '|| sqlerrm);
+end;
+
+create sequence datedim;
+
+exec sp_datedim(2022);
+
+select * from date_dimensions;
