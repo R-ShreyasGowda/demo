@@ -1,0 +1,211 @@
+--1.Write a function to print the factorial of a number.--
+
+create or replace function fn_factorial(a number) return number as
+res number(10) :=1;
+begin
+for i in 1..a loop
+res:=res*i;
+end loop;
+return res;
+end;
+
+select fn_factorial(5) from dual;
+
+--2. Write a plsql function by passing age and gender, if age <18 then return 0 otherwise return the 
+--no. of employees who are in that age and gender.
+
+create or replace function fn_age_gender(emp_age number, emp_gender varchar2)
+return number as
+v_count number(5);
+begin
+select count(*) into v_count
+from emp
+where trunc(months_between(sysdate,dob)/12) =emp_age
+and gender = emp_gender;
+if emp_age < 18 then
+return 0;
+else
+return v_count;
+end if;
+end;
+
+
+select fn_age_gender(34,'male') from emp;
+ 
+--3. Write a function that takes P,R,T as inputs and returns SI. SI=P*R*T/100
+
+create or replace function fn_multi(p number,r number,t number)
+return number as
+m number;
+begin
+m := p*r*t/100;
+return m;
+end;
+
+select fn_multi(25000,4,3) from dual;
+
+--4.Write a function which takes a date in string format and display whether it is a valid date or not. 
+
+create or replace function fn_take_date(p_date varchar2)
+return varchar2 as
+v_date date;
+begin 
+v_date := to_date(p_date,'dd-mon-yyyy');
+if p_date = v_date then
+return 'valid date';
+else
+return 'not valid date';
+end if;
+end;
+
+
+select fn_take_date('31-jan-2022') from dual;
+select fn_take_date('31-jan-22') from dual;
+
+create table stadium (
+sta_id number(5) primary key,
+sta_code varchar2(20),
+sta_name varchar2(30),
+sta_capacity number(5),	
+sta_type varchar2(20),
+sta_city varchar2(30),
+sta_opened_date date,
+sta_status varchar2(10));
+
+select * from stadium;
+
+insert into stadium values(1000,'KA-BLR-001','Chinnaswamy Stadium',15000,'OUTDOOR','Bangalore','10-Feb-69','A');
+insert into stadium values(1001,'KA-BLR-002','Kanteerava Stadium',35000,'OUTDOOR','Bangalore','15-Aug-74','A');
+insert into stadium values(1002,'KA-MYS-001','Mysore Stadium',15000,'OUTDOOR','Mysore','18-Nov-88','A');
+
+create table team (
+team_id number(5) primary key,
+team_nm varchar2(30),
+game varchar2(30),
+operational_from date,
+manager_name varchar2(30));
+
+insert into team values(50,'TITANS','Cricket','14-Mar-19','Shankar');
+insert into team values(51,'FLYERS','FootBall','13-Nov-20','Pranav');
+insert into team values(52,'BULLS','Cricket','18-Mar-18','Kumar');
+insert into team values(53,'STARS','FootBall','15-Aug-17','Subhash');
+insert into team values(54,'GIANTS','Cricket','12-Jan-17','Raman');
+
+create table team_owners (
+own_id number(5) primary key,
+own_name varchar2(30),
+team_id number(5) references team(team_id),
+percentage number(5));
+
+insert into team_owners values(1,'SURAJ',50,100);
+insert into team_owners values(2,'RAGHAVAN',51,75);
+insert into team_owners values(3,'Birla',51,25);
+insert into team_owners values(4,'TATA Group',52,100);
+insert into team_owners values(5,'Uma',53,30);
+insert into team_owners values(6,'Vijay',53,60);
+insert into team_owners values(7,'RAMA',54,100);
+insert into team_owners values(8,'KAMAL',53,10);
+
+create table match (
+Match_id number(5) primary key,
+Match_date date,
+Game varchar2(30),
+Public_tickets number(10),
+Sponsor_tickets number(10),
+Public_ticket_price number(10),
+sponsor_ticket_price number(10),
+sta_id number(5) references stadium(sta_id),
+home_team_id number(5) references team(team_id),
+visiting_team_id number(5) references team(team_id));
+
+insert into match values (10,'10-Jun-22','Cricket',10000,4000,450,300,1000,50,52);
+insert into match values(11,'12-Jun-22','FootBall',25000,10000,300,150,1001,51,53);
+insert into match values(12,'15-Jul-22','FootBall',12500,2500,425,270,1000,53,51);
+insert into match values(13,'19-Jul-22','Cricket',10000,5000,600,250,1000,52,54);
+insert into match values(14,'20-Aug-22','Cricket',30000,5000,250,100,1001,54,50);
+
+create table player (
+player_id number(5) primary key,
+player_nm varchar2(30),
+game varchar2(30),
+playing_since date,
+player_dob	date,
+gender varchar2(5));
+
+insert into player values(350,'Kohli','Cricket','10-Feb-98','13-Mar-90','M');
+insert into player values(351,'Surendra','Football','15-Aug-10','17-Apr-92','M');
+insert into player values(352,'Manchi','Cricket','17-Jan-19','20-Mar-94','M');
+insert into player values(353,'Marian','Cricket','12-Apr-20','16-May-95','M');
+
+create table team_player (
+t_p_id	number(5) primary key,
+team_id	number(5) references team(team_id),
+player_id	number(5) references player(player_id),
+start_date	date,
+end_date date,
+contract_value number(10),	
+Grade varchar2(5));
+
+
+insert into team_player values(400,50,350,'01-Jan-10','01-Jan-13',50000000,'A');
+insert into team_player values(401,50,352,'01-Feb-12','01-Feb-13',300000,'C');
+insert into team_player values(402,50,353,'01-Apr-13','01-Apr-16',400000,'B');
+insert into team_player values(403,51,351,'01-Nov-20','01-Nov-24',1000000,'A');
+insert into team_player values(404,54,350,'01-Jan-22','01-Jan-24',60000000,'A');
+insert into team_player values(405,54,352,'15-Mar-22','01-Mar-23',5000000,'B');
+
+select * from team_player;
+
+--1.Find the team names to which player Kohli played.--
+
+select team_nm
+from player p,team t,team_player tp
+where p.player_id=tp.player_id
+and t.team_id=tp.team_id
+and player_nm='Kohli';
+
+--2.Display the current team to which Marian is playing for.--
+
+select team_nm
+from player p,team t,team_player tp
+where p.player_id=tp.player_id
+and t.team_id=tp.team_id
+and player_nm='Kohli'
+and sysdate between start_date and end_date;
+
+--3.Find the number of players we have who is older than player Surendra--	
+
+select count(player_id)
+from player
+where player_dob<(select player_dob
+                  from player
+                  where player_nm='Surendra');
+
+--4.Display team name and total contract value of players for that team.--	
+
+select  team_nm,sum(contract_value), player_nm
+from player p,team t,team_player tp
+where p.player_id=tp.player_id
+and t.team_id=tp.team_id
+group by team_nm,player_nm;
+
+--5.Display the team_name, player_name, start_date, end_date and the contract value	--	
+
+select team_nm,player_nm,start_date,end_date,contract_value
+from player p,team t,team_player tp
+where p.player_id=tp.player_id
+and t.team_id=tp.team_id;
+
+--6.Display all the players who were born in the month of April--	
+
+select player_nm
+from player
+where to_char(player_dob,'mon')='apr';
+
+--7.Display all the players whose age is greater than 25 and who are either Grade B or Grade C Players--	
+
+select distinct player_nm
+from player p,team_player tp
+where p.player_id=tp.player_id
+and trunc((sysdate-player_dob)/12)>25
+and grade in('B','C');
