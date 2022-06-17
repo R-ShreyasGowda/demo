@@ -1,0 +1,173 @@
+
+ 
+create or replace procedure sp_cnt_column(user_table varchar2)as
+v_str varchar2(200);
+v_cnt int;
+type t is table of varchar2(20);
+v_tab t;
+begin
+v_str := 'select column_name from user_tab_columns where table_name='||''''||upper(user_table)||'''';
+execute immediate v_str bulk collect into v_tab;
+for i in 1..v_tab.last loop
+dbms_output.put_line('column_name '||v_tab(i));
+end loop;
+end;
+ 
+exec sp_cnt_column('emp')
+ 
+ 
+ set serveroutput on
+ 
+ select column_name from user_tab_columns where table_name='EMP';
+ 
+ select * from user_tables;
+ 
+create or replace procedure sp_cnt_ref(p_tbl_nm varchar2)as
+v_col varchar2(200);
+v_ref sys_refcursor;
+begin
+open v_ref for select column_name from user_tab_columns where table_name=upper(p_tbl_nm);
+loop
+fetch v_ref into v_col;
+exit when v_ref%notfound;
+dbms_output.put_line(v_col);
+end loop;
+close v_ref;
+end; 
+ 
+ exec sp_cnt_ref('emp'); 
+
+
+
+-----mutating error------
+create or replace trigger t_emp_sal
+before update of sal
+on emp 
+for each row
+declare 
+v_mgrsal number(20);
+begin
+    select e.sal into v_mgrsal
+    from emp e,emp m
+    where e.mgr=m.empno
+    and e.empno=:new.empno;
+      if v_mgrsal < :new.sal then
+          raise_application_error(-20001,'updated salary is greater');
+      end if;
+end;
+
+select * from emp;
+
+----overcome of mutating error---------
+create or replace trigger t_emp_sal
+before update of sal
+on emp 
+for each row
+declare 
+v_mgrsal number(20);
+pragma autonomous_transaction;
+begin
+    select e.sal into v_mgrsal
+    from emp e,emp m
+    where e.mgr=m.empno
+    and e.empno=:new.empno;
+      if v_mgrsal < :new.sal then
+          raise_application_error(-20001,'updated salary is greater');
+      end if;
+end;
+
+update emp set sal=10 where empno=7369;
+
+select * from emp;
+
+create table city_promotion (
+city_id number(5) primary key,
+city_name varchar2(30),
+state_name varchar2(30));
+
+insert into city_promotion values(10,'BLR','KA');
+insert into city_promotion values(20,'CHN','TN');
+
+create table promotion (
+prom_id	number(5) primary key,
+prom_name varchar2(20),
+discount number(5));
+
+insert into promotion values(10,'FirstBuy',10);
+insert into promotion values(11,'TengthBuy',12);
+
+create table store_promotion (
+store_id number(5) primary key,
+store_nm varchar2(20),
+city_id	number(5) references city_promotion(city_id));
+
+insert into store_promotion values(100,'JP Nagar Store',10);
+insert into store_promotion values(101,'JayaNagar Store',10);	
+
+create table customer_promotion (
+cus_id number(5) primary key,
+cus_name varchar2(30),
+city_id	number(5) references city_promotion(city_id));
+
+insert into customer_promotion values(1,'TIM',10);
+insert into customer_promotion values(2,'BILL',10);	
+insert into customer_promotion values(3,'UMA',20);
+
+create table point_of_sale (
+Sale_id	number(5) primary key,
+Sale_date date,
+store_id number(5) references store_promotion(store_id),
+cus_id	number(5) references customer_promotion(cus_id),
+prom_id number(5) references promotion(prom_id),
+Sale_Amt number(10),
+Discount number(10));
+
+drop table point_of_sale
+
+insert into point_of_sale values(1000,'08-Jun-21',100,2,10,3000,300);
+insert into point_of_sale values(1001,'09-Jun-21',101,1,null,2500,null);
+
+--Display the store name, customer name, store city_name for all the customers--
+--who purchased from us in the current month--		
+
+select city_name,store_nm,cus_name
+from point_of_sale p,city_promotion c,store_promotion s,customer_promotion c1
+where c1.cus_id=p.cus_id
+and c.city_id=s.city_id
+and s.store_id=p.store_id
+and to_char(sale_date,'mon')=to_char(sysdate,'mon');
+
+
+--Create a view to know only the sales happened in the KA state--			
+--want to see store_name, cust_name, city_name, sales_amount--			
+
+create view vw_sales_in_ka as
+select store_nm,cus_name,city_name,sale_Amt
+from point_of_sale p,city_promotion c,store_promotion s,customer_promotion c1
+where p.store_id=s.store_id
+and p.cus_id=c1.cus_id
+and s.city_id=c.city_id
+and state_name='KA';
+
+select * from vw_sales_in_ka;
+
+drop view vw_sales_in_ka;
+
+--Find customers who are from bangalore who used a promotion--
+
+select cus_name
+from point_of_sale p,city_promotion c,promotion p1,customer_promotion c1
+where c1.city_id=c.city_id
+and p.cus_id=c1.cus_id
+and p.prom_id=p1.prom_id
+and city_name='BLR';
+
+
+--Display the stores where cust TIM purchased in the last month--	
+
+select store_nm
+from point_of_sale p,store_promotion s,customer_promotion c
+where p.store_id=s.store_id
+and p.cus_id=c.cus_id
+and cus_name='TIM'
+and to_char(sale_date,'mm')=to_char(sysdate,'mm')-1;
