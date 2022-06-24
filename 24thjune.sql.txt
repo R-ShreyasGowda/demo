@@ -1,0 +1,152 @@
+--1.Understand individual tables, by doing desc , writing queries to see few records, see the column names and data in those tables. Get an idea of how this data exists in the tables										
+			
+desc shop_dimension
+desc shop_facts
+desc calender_dimension
+desc article_dimension	
+
+--2.Identify the relationship between these tables. On what basis you are going to say which is the PK and FK tables. 
+--Do the analysis and jot down your observation.	
+
+master table(primary_key)
+1.shop_dimension
+2.calender_dimension
+3.article_dimension
+child table(foriegn_key)
+1.shop_facts
+		
+select * from shop_dimension;
+select * from shop_facts;
+select * from calender_dimension;
+select * from article_dimension;	
+            								
+--3.Capture how many records we have in each table.--	
+
+select count(*) from shop_dimension;--13--
+
+select count(*) from shop_facts;--89171--
+
+select count(*) from calender_dimension;--263--
+
+select count(*) from article_dimension;--211--
+											
+--4.If I do an inner join between shop_dimension and shop_facts, how many records we are expecting.	
+
+select count(*)
+from shop_dimension s,shop_facts s1
+where s1.shop_id=s.shop_id; --89171--
+											
+--5.Find the shop_name which are in Dallas city or in New York city with the floor_space > 2000	
+
+select shop_name 
+from shop_dimension
+where city in ('Dallas','New York')
+and floor_space>2000;
+
+select shop_name 
+from shop_dimension
+where city=('Dallas' or city='New York')
+and floor_space>2000;
+	   										
+--6.Find the article_label which we dont have any sales records	
+
+select article_label
+from article_dimension
+where article_id not in (select article_id
+                         from shop_facts);
+									
+--7.find the article_label which is most expensive in the respective family.
+                                  
+select family_name,sale_price,article_label
+from article_dimension
+where (sale_price,family_name) in (select max(sale_price),family_name
+                                   from article_dimension
+                                   group by family_name);
+                                   										
+--8.Display category, article_label, first word from the article label as Code, 										
+--show family name as (Family Name concatenate with family code)										
+--for all the articles which is priced more than the average price of all the articles.	
+
+select category,article_label,substr(article_label,1,instr(article_label,' ')) as code,family_name||'-'||family_code
+from article_dimension
+where sale_price>(select avg(sale_price)
+                  from article_dimension);
+
+select count(*)
+from article_dimension
+where sale_price>(select avg(sale_price)
+                  from article_dimension);--90--
+									
+--9.Find famlily, category and number of article lables. Consider only category and family which has more than 10 articles.		
+
+select family_name,category,count(article_id)
+from article_dimension 
+group by family_name,category
+having count(*)>10;
+									
+--10.Find the common priced products between Accessories and City Skirts family
+
+select article_label
+from article_dimension
+where sale_price in (select sale_price
+                     from article_dimension
+                     where family_name='Accessories'
+                     intersect
+                     select sale_price
+                     from article_dimension
+                     where family_name='City Skirts');
+									
+--11.Display family, Category, count of products at category level, count of products at family level.
+
+
+select distinct family_name,category,count(article_id)over(partition by category)category_level,count(article_id)over(partition by family_name)family_level
+from article_dimension;
+
+select count(article_id),category,article_label
+from article_dimension
+group by category,article_label;
+
+select count(article_id),family_name
+from article_dimension
+group by family_name;
+
+											
+--12.Display Yearwise, familywise, sales_revenue.	
+
+select yr,family_name,sum(amount_sold)
+from article_dimension a,shop_facts s,calender_dimension c
+where s.article_id=a.article_id
+and s.week_id=c.week_id
+group by yr,family_name
+order by yr;
+											
+--13.Find the top 2 article_labels we sold in each year.
+
+select * 
+from (select yr,article_label,sum(amount_sold),dense_rank()over(partition by yr order by sum(amount_sold) desc)ranking
+      from article_dimension a,shop_facts s,calender_dimension c
+      where s.article_id=a.article_id
+      and s.week_id=c.week_id
+      group by article_label,yr
+      order by yr)
+where ranking<3;
+										
+--14.create a view which will give us Shop_Name, Article_Label, week_in_year, year, quantity_sold, amount_sold, margin, cost										
+--for the family in Accessories call it as accessories_sales_view	
+
+create table s_shop_dimension as select * from shop_dimension;
+
+create table s_shop_facts as select * from shop_facts;
+
+create table s_calender_dimension as select * from calender_dimension;
+
+create table s_article_dimension as select * from article_dimension;
+
+create view vw_shopnm as
+select shop_name,article_label,week_in_year,yr,quantity_sold,amount_sold,margin,(amount_sold-margin) as cost
+from s_shop_dimension s,s_shop_facts s1,s_calender_dimension c,s_article_dimension a
+where s1.article_id=a.article_id
+and s1.week_id=c.week_id
+and s1.shop_id=s.shop_id;
+
+select * from vw_shopnm
