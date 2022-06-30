@@ -1,0 +1,116 @@
+----------------------SCD2----------------
+            
+create table prod_dim2_type2
+(
+prod_sur_id number(5),
+prod_id	number(5),
+prod_nm	varchar2(20),
+prod_cat varchar2(30),
+prod_family	varchar2(30),
+prod_price	number(5),
+from_date date,
+to_date date
+);
+
+alter table prod_dim2_type2 add cur_rec_ind varchar2(5);
+
+select * from prod_dim2_type2;
+
+        
+create or replace procedure sp_prod_dim2 as
+   cursor cur_pdim2 is
+       select prod_id,prod_name prod_nm ,prod_cat_desc prod_Cat,prod_fam_desc prod_family,prod_price
+       from prod_family_type1 p,prod_cat_type1 p1,products_type1 p2
+       where p1.prod_fam_id=p.prod_fam_id
+       and p2.prod_cat_id=p1.prod_cat_id;
+   v_count number(5);
+begin 
+  for i in cur_pdim2 loop
+    select count(*) into v_count
+    from prod_dim2_type2
+    where prod_id=i.prod_id and prod_price=i.prod_price;
+      if v_count=0 then
+        insert into prod_dim2_type2 values(prod_dim.nextval,i.prod_id,i.prod_nm,i.prod_Cat,i.prod_family,i.prod_price,sysdate,null,'Y');
+        update prod_dim2_type2 set to_date=sysdate-1,cur_rec_ind='N'
+        where prod_id=i.prod_id and prod_price!=i.prod_price;
+     end if;
+  end loop;
+end;    
+
+insert into prod_dim2_type2 values(prod_dim.nextval,i.prod_id,i.prod_nm,i.prod_Cat,i.prod_family,i.prod_price,sysdate,null,'Y');
+
+exec sp_prod_dim2;    
+
+select * from prod_dim2_type2;
+
+select * from products_type1;
+
+update products_type1 set prod_price=4000 where prod_id=5;
+
+truncate table prod_dim2_type2;
+
+insert into products_type1 values (6,'mobile',35000,51,sysdate,null);
+
+---------------------------SCD3--------------------------------------------
+
+create table prod_dim3_tye3 
+(
+prod_id number(5),
+prod_nm varchar2(20),
+prod_pre_nm varchar2(20),
+prod_cat varchar(20),
+prod_pre_cat varchar(20),
+prod_family varchar(20),
+prod_pre_family varchar(20),
+prod_price number(10),
+prod_pre_price number(10)
+);
+
+
+create or replace procedure sp_prod_dim3 as
+   cursor cur_pdim3 is
+       select prod_id,prod_name prod_nm ,prod_cat_desc prod_Cat,prod_fam_desc prod_family,prod_price
+       from prod_family_type1 p,prod_cat_type1 p1,products_type1 p2
+       where p1.prod_fam_id=p.prod_fam_id
+       and p2.prod_cat_id=p1.prod_cat_id;
+   v_count number(5);
+begin 
+    for i in cur_pdim3 loop
+       select count(*) into v_count
+       from prod_dim3_tye3
+       where prod_id=i.prod_id;
+          if v_count=0 then
+            insert into prod_dim3_tye3 values(i.prod_id,i.prod_nm,null,i.prod_Cat,null,i.prod_family,null,i.prod_price,null);
+          else
+              update prod_dim3_tye3 set prod_pre_nm=prod_nm,prod_nm=i.prod_nm
+              where prod_id=i.prod_id and prod_nm!=i.prod_nm;
+              
+              update prod_dim3_tye3 set prod_pre_cat=prod_cat , prod_cat=i.prod_Cat
+              where prod_id=i.prod_id and prod_cat!=i.prod_Cat;
+              
+              update prod_dim3_tye3 set prod_pre_family=prod_family,prod_family=i.prod_family
+              where prod_id=i.prod_id and prod_family!=i.prod_family;
+  
+              update prod_dim3_tye3 set prod_pre_price=prod_price,prod_price=i.prod_price
+              where prod_id=i.prod_id and prod_price!=i.prod_price;
+          end if;
+    end loop;
+end;
+
+
+exec sp_prod_dim3;
+
+select * from prod_dim3_tye3;
+
+truncate table prod_dim3_tye3;
+
+update products_type1 set prod_price=200 where prod_id=5;
+
+update products_type1 set prod_name='computers' where prod_id=5;
+
+update prod_cat_type1 set prod_cat_desc='home furniture' where prod_cat_id=51;
+
+update prod_family_type1 set prod_fam_desc='electronic' where prod_fam_id=100;
+
+select * from products_type1;
+
