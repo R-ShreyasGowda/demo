@@ -1,0 +1,170 @@
+-----------------------------------------------------------------------------
+create or replace procedure sp_prodname(product_name varchar2)as
+v_count number(5);
+begin
+   select count(*) into v_count
+   from product_retail p ,sales_retail s
+   where p.prod_id =s.prod_id
+   and sales_date = sysdate
+   and  p_name =product_name;
+    if v_count=0 then
+      dbms_output.put_line (product_name||' not made sale today');
+    else
+        dbms_output.put_line (product_name||' sales happend');
+    end if;
+end; 
+
+exec sp_prodname('tv');
+
+create or replace function fn_age_gender(emp_age number, emp_gender varchar2)
+return number as
+v_cnt number(10);
+begin
+select count(*) into v_cnt
+from emp
+where trunc(months_between(sysdate,dob)/12) =emp_age
+and gender = emp_gender;
+if emp_age < 18 then
+return 0;
+else
+return 1;
+end if;
+end;
+
+select fn_age_gender(25,'male') from dual;
+-------------------------------------------------------------------------------
+create or replace package pkg_product as
+procedure sp_prodname(product_name varchar2);
+function sp_prodname(emp_age number, emp_gender varchar2) return number;
+end pkg_product;
+-------------------------------------------------------------------------------
+
+create or replace package body pkg_product as
+   procedure sp_prodname(product_name varchar2)as
+       v_count number(5);
+   begin
+      select count(*) into v_count
+      from product_retail p ,sales_retail s
+      where p.prod_id =s.prod_id
+      and sales_date = sysdate
+      and  p_name =product_name;
+         if v_count=0 then
+             dbms_output.put_line (product_name||' not made sale today');
+         else
+             dbms_output.put_line (product_name||' sales happend');
+         end if;
+   end ; 
+  function sp_prodname(emp_age number, emp_gender varchar2)
+  return number as
+      v_count number(10);
+  begin
+      select count(*) into v_count
+      from emp
+      where trunc(months_between(sysdate,dob)/12) =emp_age
+      and gender = emp_gender;
+         if emp_age < 18 then
+            return 0;
+         else
+            return 1;
+         end if;
+  end ;
+end;
+-------------------------------------------------------------------------------
+exec pkg_product.sp_prodname('tv');
+select pkg_product.sp_prodname(25,'male') from dual;
+-------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------
+create or replace package  pck_dates_mobileno as
+function fn_take_date(first_date varchar2 ,last_date varchar2)
+return number;
+function fn_take_date (mobile varchar2)
+return varchar2;
+end pck_dates_mobileno;
+--------------------------------------------------------------------------
+
+create or replace package body pck_dates_mobileno as
+function fn_take_date(first_date varchar2 ,last_date varchar2)
+return number as
+   v_cnt number := 0;
+   a_date date:=first_date;
+   b_date date:=last_date;
+begin
+   while a_date <= b_date loop
+       if to_char(a_date,'dy') = 'sat' then
+           v_cnt := v_cnt + 1;
+       end if;
+           a_date := a_date +1;
+   end loop;
+return v_cnt;
+exception
+when others then 
+return -1;
+end;
+
+
+function fn_take_date (mobile varchar2)
+return varchar2 as
+begin
+   if length(to_char(mobile)) = 10 and substr(mobile,1,1) in (9,8,7) then
+       return 'valid number';
+   else
+       return 'invalid number';
+   end if;
+end;
+end;
+-----------------------------------------------------------------------------
+
+select pck_dates_mobileno.fn_take_date(6094309404)from dual;
+select pck_dates_mobileno.fn_take_date('23-apr-2020','01-apr-2022') from dual;
+------------------------------------------------------------------------------
+
+create or replace function fn_take_date(p_date varchar2)
+return varchar2 as
+   v_date date;
+begin 
+   v_date := to_date(p_date,'dd-mon-yyyy');
+   if p_date = v_date then
+         return 'valid date';
+    else
+         return 'not valid date';
+   end if;
+end;
+
+select fn_take_date('23-apr-2822') from dual;
+
+select fn_take_date('23-apr-28') from dual;
+
+create or replace function fn_mob_num (mobile varchar2)
+return varchar2 as
+begin
+   if length(to_char(mobile)) = 10 and substr(mobile,1,1) in (9,8,7) then
+       return 'valid number';
+   else
+       return 'invalid number';
+   end if;
+end;
+
+select fn_mob_num(6094309404)from dual;
+
+select fn_mob_num(7094309404)from dual;
+
+create or replace function fn_two_dates(first_date varchar2 ,last_date varchar2)
+return number as
+   v_cnt number := 0;
+   a_date date:=first_date;
+   b_date date:=last_date;
+begin
+   while a_date <= b_date loop
+       if to_char(a_date,'dy') = 'sat' then
+           v_cnt := v_cnt + 1;
+       end if;
+           a_date := a_date +1;
+   end loop;
+return v_cnt;
+exception
+when others then 
+return -1;
+end;
+
+select fn_two_dates('23-apr-2020','01-apr-2022') from dual;
